@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- app -->
+    <string name="app_name">SystemAppsList</string>
+    <!-- list row -->
+    <string name="package_name_label">Package name:</string>
+    <string name="path_label">Path:</string>
+    <!-- async apps -->
+    <string name="progress_title">Reading...</string>
+</resources>
