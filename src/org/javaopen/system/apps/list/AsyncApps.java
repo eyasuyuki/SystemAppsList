@@ -113,13 +113,14 @@ public class AsyncApps extends AsyncTask<Void, String, Void> {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 final App item = appList.get(position);
                 
-                int title = R.string.confirm_disable_title;
-                if (item != null && !item.isEnabled) {
-                    title = R.string.confirm_enable_title;
-                }
-                
                 AlertDialog.Builder builder = new AlertDialog.Builder(context);
-                builder.setTitle(title);
+
+                if (item != null && item.isEnabled) {
+                    builder.setTitle(R.string.confirm_disable_title);
+                    builder.setMessage(R.string.confirm_disable_caution);
+                } else {
+                    builder.setTitle(R.string.confirm_enable_title);
+                }
                 
                 builder.setPositiveButton(R.string.confirm_yes, new DialogInterface.OnClickListener() {
                     
