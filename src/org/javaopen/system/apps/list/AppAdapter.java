@@ -18,6 +18,7 @@ public class AppAdapter extends ArrayAdapter<App> {
     LayoutInflater inflater = null;
     
     ImageView icon = null;
+    ImageView status = null;
     TextView appView = null;
     TextView packageView = null;
     TextView pathView = null;
@@ -39,11 +40,17 @@ public class AppAdapter extends ArrayAdapter<App> {
         App item = items.get(position);
         
         icon = (ImageView)view.findViewById(R.id.icon);
+        status = (ImageView)view.findViewById(R.id.status_icon);
         appView = (TextView)view.findViewById(R.id.app_name);
         packageView = (TextView)view.findViewById(R.id.package_name);
         pathView = (TextView)view.findViewById(R.id.path_name);
         
         icon.setImageDrawable(item.getIcon());
+        if (item.isEnabled) {
+            status.setImageResource(android.R.drawable.presence_online);
+        } else {
+            status.setImageResource(android.R.drawable.presence_busy);
+        }
         appView.setText(item.getAppName());
         packageView.setText(item.getPackageName());
         pathView.setText(item.getPath());
