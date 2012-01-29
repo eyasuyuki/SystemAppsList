@@ -7,6 +7,7 @@ public class App {
     String appName = null;
     String packageName = null;
     String path = null;
+    boolean isEnabled = false;
     public App() {}
     public Drawable getIcon() {
         return icon;
@@ -31,5 +32,11 @@ public class App {
     }
     public void setPath(String path) {
         this.path = path;
+    }
+    public boolean isEnabled() {
+        return isEnabled;
+    }
+    public void setEnabled(boolean isEnabled) {
+        this.isEnabled = isEnabled;
     }
 }
