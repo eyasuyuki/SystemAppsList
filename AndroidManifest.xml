@@ -19,6 +19,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".Preferences" />
+        <service android:name=".PackageService" android:process=":remote" >
+            <intent-filter>
+                <action android:name="org.javaopen.system.apps.list.PackageServiceBinder" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>
