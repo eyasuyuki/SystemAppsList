@@ -113,6 +113,19 @@ public class AsyncApps extends AsyncTask<Void, String, Void> {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 final App item = appList.get(position);
                 
+                context.startActivity(
+                        new Intent(
+                                android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                Uri.parse("package:"+item.getPackageName())));
+            }
+        });
+        
+        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                final App item = appList.get(position);
+                
                 AlertDialog.Builder builder = new AlertDialog.Builder(context);
 
                 if (item != null && item.isEnabled) {
@@ -146,19 +159,6 @@ public class AsyncApps extends AsyncTask<Void, String, Void> {
                     }
                 });
                 builder.create().show();
-            }
-        });
-        
-        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-
-            @Override
-            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-                final App item = appList.get(position);
-                
-                context.startActivity(
-                        new Intent(
-                                android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                                Uri.parse("package:"+item.getPackageName())));
                 return true;
             }
         });
