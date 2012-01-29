@@ -7,4 +7,17 @@
     <string name="path_label">Path:</string>
     <!-- async apps -->
     <string name="progress_title">Reading...</string>
+    <string name="menu_preference_label">Preferences</string>
+    <!-- confirm dialog -->
+    <string name="confirm_disable_title">Disable it?</string>
+    <string name="confirm_enable_title">Enable it?</string>
+    <string name="confirm_yes">Yes</string>
+    <string name="confirm_cancel">Cancel</string>
+    <!-- command -->
+    <string name="command_disable">pm disable </string>
+    <string name="command_enable">pm enable </string>
+    <!-- preferences -->
+    <string name="preference_su_path_key">su_path</string>
+    <string name="preference_su_path_default">/system/xbin/su</string>
+    <string name="preference_su_path_label">Su path</string>
 </resources>
