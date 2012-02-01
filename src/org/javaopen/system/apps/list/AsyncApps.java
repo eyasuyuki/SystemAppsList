@@ -4,9 +4,11 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
@@ -33,17 +35,6 @@ public class AsyncApps extends AsyncTask<Void, String, Void> {
     ListView listView = null;
     ProgressDialog dialog = null;
     List<App> appList = new ArrayList<App>();
-    
-    static Method copyFile = null;
-    
-    static {
-        try {
-            Class clazz = Class.forName("android.os.FileUtils");
-            copyFile = clazz.getMethod("copyFile", File.class, File.class);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
     
     public AsyncApps(Context context
             ,ListView listView) {
@@ -86,15 +77,27 @@ public class AsyncApps extends AsyncTask<Void, String, Void> {
         return null;
     }
     
+    String getOdexName(File src) {
+        StringBuffer result = new StringBuffer();
+        result.append(FilenameUtils.getPath(src.getAbsolutePath()));
+        result.append(FilenameUtils.getBaseName(src.getName()));
+        result.append(".odex");
+        Log.d(TAG, "getOdexName: buf="+result.toString());
+        return result.toString();
+    }
+    
     void copy(String filename) {
         File src = new File(filename);
         File dst = new File(context.getExternalFilesDir(null), src.getName());
-        if (copyFile != null && !dst.exists()) {
-            try {
-                copyFile.invoke(null, src, dst);
-            } catch (Exception e) {
-                e.printStackTrace();
+        File odex = new File(getOdexName(src));
+        try {
+            if (!dst.exists()) FileUtils.copyFile(src, dst);
+            if (odex.exists() && !dst.exists()) {
+                File odst = new File(context.getExternalFilesDir(null), odex.getName());
+                FileUtils.copyFile(odex, odst);
             }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
