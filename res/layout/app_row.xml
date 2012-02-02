@@ -26,6 +26,9 @@
 	        <TextView android:id="@+id/package_name"
 		        android:layout_width="wrap_content"
 		        android:layout_height="wrap_content" />
+	        <TextView android:id="@+id/uid_view"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
 	        <TextView android:id="@+id/path_name"
 		        android:layout_width="wrap_content"
 		        android:layout_height="wrap_content" />
