@@ -6,6 +6,7 @@ public class App {
     Drawable icon = null;
     String appName = null;
     String packageName = null;
+    int uid = 0;
     String path = null;
     boolean isEnabled = false;
     public App() {}
@@ -26,6 +27,12 @@ public class App {
     }
     public void setPackageName(String packageName) {
         this.packageName = packageName;
+    }
+    public int getUid() {
+        return uid;
+    }
+    public void setUid(int uid) {
+        this.uid = uid;
     }
     public String getPath() {
         return path;

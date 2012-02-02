@@ -21,6 +21,7 @@ public class AppAdapter extends ArrayAdapter<App> {
     ImageView status = null;
     TextView appView = null;
     TextView packageView = null;
+    TextView uidView = null;
     TextView pathView = null;
 
     public AppAdapter(Context context, int res, List<App> items) {
@@ -43,6 +44,7 @@ public class AppAdapter extends ArrayAdapter<App> {
         status = (ImageView)view.findViewById(R.id.status_icon);
         appView = (TextView)view.findViewById(R.id.app_name);
         packageView = (TextView)view.findViewById(R.id.package_name);
+        uidView = (TextView)view.findViewById(R.id.uid_view);
         pathView = (TextView)view.findViewById(R.id.path_name);
         
         icon.setImageDrawable(item.getIcon());
@@ -53,6 +55,7 @@ public class AppAdapter extends ArrayAdapter<App> {
         }
         appView.setText(item.getAppName());
         packageView.setText(item.getPackageName());
+        uidView.setText(Integer.toString(item.getUid()));
         pathView.setText(item.getPath());
         
         return view;

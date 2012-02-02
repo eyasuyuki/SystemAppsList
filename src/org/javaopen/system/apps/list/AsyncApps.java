@@ -5,6 +5,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
@@ -34,7 +36,7 @@ public class AsyncApps extends AsyncTask<Void, String, Void> {
     Context context = null;
     ListView listView = null;
     ProgressDialog dialog = null;
-    List<App> appList = new ArrayList<App>();
+    List<App> apps = new ArrayList<App>();
     
     public AsyncApps(Context context
             ,ListView listView) {
@@ -69,11 +71,19 @@ public class AsyncApps extends AsyncTask<Void, String, Void> {
             app.setIcon(icon);
             app.setAppName(appName);
             app.setPackageName(a.packageName);
+            app.setUid(a.uid);
             app.setPath(a.sourceDir);
             app.setEnabled(a.enabled);
             copy(a.sourceDir);
-            appList.add(app);
+            apps.add(app);
         }
+        // sort
+        Collections.sort(apps, new Comparator<App>(){
+            @Override
+            public int compare(App lhs, App rhs) {
+                return lhs.getUid() - rhs.getUid();
+            }});
+        
         return null;
     }
     
@@ -108,13 +118,13 @@ public class AsyncApps extends AsyncTask<Void, String, Void> {
 
     @Override
     protected void onPostExecute(Void result) {
-        AppAdapter adapter = new AppAdapter(context, R.layout.app_row, appList);
+        AppAdapter adapter = new AppAdapter(context, R.layout.app_row, apps);
         listView.setAdapter(adapter);
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                final App item = appList.get(position);
+                final App item = apps.get(position);
                 
                 context.startActivity(
                         new Intent(
@@ -127,7 +137,7 @@ public class AsyncApps extends AsyncTask<Void, String, Void> {
 
             @Override
             public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-                final App item = appList.get(position);
+                final App item = apps.get(position);
                 
                 AlertDialog.Builder builder = new AlertDialog.Builder(context);
 
