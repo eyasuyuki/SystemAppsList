@@ -2,6 +2,9 @@
 <resources>
     <!-- app -->
     <string name="app_name">SystemAppsList</string>
+    <!-- main -->
+    <string name="enabled_label">enabled</string>
+    <string name="disabled_label">disabled</string>
     <!-- list row -->
     <string name="package_name_label">Package name:</string>
     <string name="path_label">Path:</string>

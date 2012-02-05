@@ -34,14 +34,18 @@ public class AsyncApps extends AsyncTask<Void, String, Void> {
     private static final String TAG = AsyncApps.class.getName();
     
     Context context = null;
-    ListView listView = null;
+    ListView enabledList = null;
+    ListView disabledList = null;
     ProgressDialog dialog = null;
-    List<App> apps = new ArrayList<App>();
+    List<App> enabledApps = new ArrayList<App>();
+    List<App> disabledApps = new ArrayList<App>();
     
     public AsyncApps(Context context
-            ,ListView listView) {
+            ,ListView enabledList
+            ,ListView disabledList) {
         this.context = context;
-        this.listView = listView;
+        this.enabledList = enabledList;
+        this.disabledList = disabledList;
     }
 
     @Override
@@ -75,14 +79,20 @@ public class AsyncApps extends AsyncTask<Void, String, Void> {
             app.setPath(a.sourceDir);
             app.setEnabled(a.enabled);
             copy(a.sourceDir);
-            apps.add(app);
+            if (app.isEnabled) {
+                enabledApps.add(app);
+            } else {
+                disabledApps.add(app);
+            }
         }
         // sort
-        Collections.sort(apps, new Comparator<App>(){
+        Comparator<App> comp = new Comparator<App>(){
             @Override
             public int compare(App lhs, App rhs) {
                 return lhs.getUid() - rhs.getUid();
-            }});
+            }};
+        Collections.sort(enabledApps, comp);
+        Collections.sort(disabledApps, comp);
         
         return null;
     }
@@ -115,66 +125,74 @@ public class AsyncApps extends AsyncTask<Void, String, Void> {
     protected void onProgressUpdate(String... values) {
         dialog.setMessage(values[0]);
     }
+    
+    AdapterView.OnItemClickListener click = new AdapterView.OnItemClickListener() {
+
+        @Override
+        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            final App item = enabledApps.get(position);
+            
+            context.startActivity(
+                    new Intent(
+                            android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                            Uri.parse("package:"+item.getPackageName())));
+        }
+    };
+    
+    AdapterView.OnItemLongClickListener longClick = new AdapterView.OnItemLongClickListener() {
+
+        @Override
+        public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+            final App item = enabledApps.get(position);
+            
+            AlertDialog.Builder builder = new AlertDialog.Builder(context);
+
+            if (item != null && item.isEnabled) {
+                builder.setTitle(R.string.confirm_disable_title);
+                builder.setMessage(R.string.confirm_disable_caution);
+            } else {
+                builder.setTitle(R.string.confirm_enable_title);
+            }
+            
+            builder.setPositiveButton(R.string.confirm_yes, new DialogInterface.OnClickListener() {
+                
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    int code = exec(item.isEnabled(), item.getPackageName());
+                    
+                    if (code == 0) {
+                        Intent intent = new Intent(context, PackageService.class);
+                        intent.setAction(PackageService.ACTION_UPDATE);
+                        context.startService(intent);
+                    }
+                    
+                    dialog.dismiss();
+                }
+            });
+            
+            builder.setNegativeButton(R.string.confirm_cancel, new DialogInterface.OnClickListener() {
+                
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    dialog.dismiss();
+                }
+            });
+            builder.create().show();
+            return true;
+        }
+    };
 
     @Override
     protected void onPostExecute(Void result) {
-        AppAdapter adapter = new AppAdapter(context, R.layout.app_row, apps);
-        listView.setAdapter(adapter);
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        AppAdapter enabledAdapter = new AppAdapter(context, R.layout.app_row, enabledApps);
+        enabledList.setAdapter(enabledAdapter);
+        enabledList.setOnItemClickListener(click);
+        enabledList.setOnItemLongClickListener(longClick);
 
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                final App item = apps.get(position);
-                
-                context.startActivity(
-                        new Intent(
-                                android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                                Uri.parse("package:"+item.getPackageName())));
-            }
-        });
-        
-        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-
-            @Override
-            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-                final App item = apps.get(position);
-                
-                AlertDialog.Builder builder = new AlertDialog.Builder(context);
-
-                if (item != null && item.isEnabled) {
-                    builder.setTitle(R.string.confirm_disable_title);
-                    builder.setMessage(R.string.confirm_disable_caution);
-                } else {
-                    builder.setTitle(R.string.confirm_enable_title);
-                }
-                
-                builder.setPositiveButton(R.string.confirm_yes, new DialogInterface.OnClickListener() {
-                    
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        int code = exec(item.isEnabled(), item.getPackageName());
-                        
-                        if (code == 0) {
-                            Intent intent = new Intent(context, PackageService.class);
-                            intent.setAction(PackageService.ACTION_UPDATE);
-                            context.startService(intent);
-                        }
-                        
-                        dialog.dismiss();
-                    }
-                });
-                
-                builder.setNegativeButton(R.string.confirm_cancel, new DialogInterface.OnClickListener() {
-                    
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.dismiss();
-                    }
-                });
-                builder.create().show();
-                return true;
-            }
-        });
+        AppAdapter disabledAdapter = new AppAdapter(context, R.layout.app_row, disabledApps);
+        disabledList.setAdapter(disabledAdapter);
+        disabledList.setOnItemClickListener(click);
+        disabledList.setOnItemLongClickListener(longClick);
         
         try { dialog.dismiss(); } catch (Exception e) {}
     }

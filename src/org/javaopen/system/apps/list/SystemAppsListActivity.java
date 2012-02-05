@@ -1,6 +1,6 @@
 package org.javaopen.system.apps.list;
 
-import android.app.ListActivity;
+import android.app.TabActivity;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
@@ -12,15 +12,25 @@ import android.os.IBinder;
 import android.os.RemoteException;
 import android.preference.PreferenceManager;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.widget.ListView;
+import android.widget.TabHost;
+import android.widget.TabHost.TabSpec;
+import android.widget.TabWidget;
 
-public class SystemAppsListActivity extends ListActivity {
+public class SystemAppsListActivity extends TabActivity {
     private static final String TAG = SystemAppsListActivity.class.getName();
     
     Handler handler = new Handler();
     MenuItem menuItem = null;
+
+    TabHost tabHost = null;
+    TabWidget tab = null;
+    ListView enabledList = null;
+    ListView disabledList = null;
     
     PackageCallback callback = new PackageCallback.Stub() {
         
@@ -68,7 +78,22 @@ public class SystemAppsListActivity extends ListActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.main);
+        tabHost = getTabHost();
+        LayoutInflater.from(this).inflate(R.layout.main, tabHost.getTabContentView(), true);
+
+        String enabledLabel = getString(R.string.enabled_label);
+        String disabledLabel = getString(R.string.disabled_label);
+        TabSpec enabledSpec = tabHost.newTabSpec(enabledLabel);
+        enabledSpec.setIndicator(enabledLabel);
+        enabledSpec.setContent(R.id.enabled_list);
+        tabHost.addTab(enabledSpec);
+        TabSpec disabledSpec = tabHost.newTabSpec(disabledLabel);
+        disabledSpec.setIndicator(disabledLabel);
+        disabledSpec.setContent(R.id.disabled_list);
+        tabHost.addTab(disabledSpec);
+        
+        enabledList = (ListView)findViewById(R.id.enabled_list);
+        disabledList = (ListView)findViewById(R.id.disabled_list);
         
         // bind
         Intent intent = new Intent(this, PackageService.class);
@@ -92,8 +117,9 @@ public class SystemAppsListActivity extends ListActivity {
     
     void reload() {
         AsyncApps async = new AsyncApps(this
-                //,apps
-                ,getListView());
+                ,enabledList
+                ,disabledList
+                );
         async.execute();
     }
 
