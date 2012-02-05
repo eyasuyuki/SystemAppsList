@@ -19,6 +19,6 @@
     <string name="command_enable">pm enable </string>
     <!-- preferences -->
     <string name="preference_su_path_key">su_path</string>
-    <string name="preference_su_path_default">/system/xbin/su</string>
+    <string name="preference_su_path_default">/system/bin/su</string>
     <string name="preference_su_path_label">Su path</string>
 </resources>
