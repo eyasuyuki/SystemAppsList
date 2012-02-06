@@ -83,12 +83,16 @@ public class SystemAppsListActivity extends TabActivity {
 
         String enabledLabel = getString(R.string.enabled_label);
         String disabledLabel = getString(R.string.disabled_label);
+        
         TabSpec enabledSpec = tabHost.newTabSpec(enabledLabel);
-        enabledSpec.setIndicator(enabledLabel);
+        enabledSpec.setIndicator(enabledLabel,
+        		getResources().getDrawable(android.R.drawable.ic_menu_manage));
         enabledSpec.setContent(R.id.enabled_list);
         tabHost.addTab(enabledSpec);
+        
         TabSpec disabledSpec = tabHost.newTabSpec(disabledLabel);
-        disabledSpec.setIndicator(disabledLabel);
+        disabledSpec.setIndicator(disabledLabel,
+        		getResources().getDrawable(android.R.drawable.ic_menu_close_clear_cancel));
         disabledSpec.setContent(R.id.disabled_list);
         tabHost.addTab(disabledSpec);
         
