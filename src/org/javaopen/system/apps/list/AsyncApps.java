@@ -59,7 +59,8 @@ public class AsyncApps extends AsyncTask<Void, String, Void> {
     protected Void doInBackground(Void... params) {
         PackageManager pm = context.getPackageManager();
         List<ApplicationInfo> alist =
-            pm.getInstalledApplications(PackageManager.GET_META_DATA);
+            pm.getInstalledApplications(PackageManager.GET_META_DATA
+            		| PackageManager.GET_UNINSTALLED_PACKAGES);
         for (ApplicationInfo a: alist) {
             if((a.flags & ApplicationInfo.FLAG_SYSTEM) != ApplicationInfo.FLAG_SYSTEM) continue;
             Drawable icon = null;
@@ -89,7 +90,8 @@ public class AsyncApps extends AsyncTask<Void, String, Void> {
         Comparator<App> comp = new Comparator<App>(){
             @Override
             public int compare(App lhs, App rhs) {
-                return lhs.getUid() - rhs.getUid();
+                //return lhs.getUid() - rhs.getUid();
+                return rhs.getUid() - lhs.getUid();
             }};
         Collections.sort(enabledApps, comp);
         Collections.sort(disabledApps, comp);
