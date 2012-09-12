@@ -20,11 +20,18 @@
             </intent-filter>
         </activity>
         <activity android:name=".Preferences" />
-        <service android:name=".PackageService" android:process=":remote" >
+        <receiver android:name=".PackageReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.PACKAGE_ADDED"/>
+                <action android:name="android.intent.action.PACKAGE_REMOVED"/>
+                <data android:scheme="package"/>
+            </intent-filter>
+        </receiver><service android:name=".PackageService" android:process=":remote" >
             <intent-filter>
                 <action android:name="org.javaopen.system.apps.list.PackageServiceBinder" />
             </intent-filter>
         </service>
+        
     </application>
 
 </manifest>
