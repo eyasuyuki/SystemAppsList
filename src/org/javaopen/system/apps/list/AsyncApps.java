@@ -4,6 +4,7 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -21,10 +22,13 @@ import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.content.res.XmlResourceParser;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.preference.PreferenceManager;
+import android.provider.ContactsContract.CommonDataKinds.Event;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -32,6 +36,12 @@ import android.widget.ListView;
 
 public class AsyncApps extends AsyncTask<Void, String, Void> {
     private static final String TAG = AsyncApps.class.getName();
+    public static final String USES_PERMISSION = "uses-permission";
+	public static final String RECEIVER = "receiver";
+	public static final String INTENT_FILTER = "intent-filter";
+	public static final String ACTION = "action";
+	public static final String NAMESPACE = "http://schemas.android.com/apk/res/android";
+	public static final String NAME = "name";
     
     Context context = null;
     ListView enabledList = null;
@@ -62,6 +72,7 @@ public class AsyncApps extends AsyncTask<Void, String, Void> {
             pm.getInstalledApplications(PackageManager.GET_META_DATA
             		| PackageManager.GET_UNINSTALLED_PACKAGES);
         for (ApplicationInfo a: alist) {
+        	parseManifest(context, a.packageName);
             if((a.flags & ApplicationInfo.FLAG_SYSTEM) != ApplicationInfo.FLAG_SYSTEM) continue;
             Drawable icon = null;
             String appName = null;
@@ -128,58 +139,84 @@ public class AsyncApps extends AsyncTask<Void, String, Void> {
         dialog.setMessage(values[0]);
     }
     
-    AdapterView.OnItemClickListener click = new AdapterView.OnItemClickListener() {
+    void processClick(List<App> appList, int position) {
+        final App item = appList.get(position);
+        
+        context.startActivity(
+                new Intent(
+                        android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                        Uri.parse("package:"+item.getPackageName())));
+    }
+    
+    AdapterView.OnItemClickListener clickEnabled = new AdapterView.OnItemClickListener() {
 
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            final App item = enabledApps.get(position);
-            
-            context.startActivity(
-                    new Intent(
-                            android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                            Uri.parse("package:"+item.getPackageName())));
+        	processClick(enabledApps, position);
+        }
+    };
+
+    AdapterView.OnItemClickListener clickDisabled = new AdapterView.OnItemClickListener() {
+
+        @Override
+        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+        	processClick(disabledApps, position);
         }
     };
     
-    AdapterView.OnItemLongClickListener longClick = new AdapterView.OnItemLongClickListener() {
+    void processLongClick(List<App> appList, int position) {
+        final App item = appList.get(position);
+        Log.d(TAG, "processLongClick: item.packageName="+item.packageName+", item.isEnabled"+item.isEnabled);
+        
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+
+        if (item != null && item.isEnabled) {
+            builder.setTitle(R.string.confirm_disable_title);
+            builder.setMessage(R.string.confirm_disable_caution);
+        } else {
+            builder.setTitle(R.string.confirm_enable_title);
+        }
+        
+        builder.setPositiveButton(R.string.confirm_yes, new DialogInterface.OnClickListener() {
+            
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                int code = exec(item.isEnabled(), item.getPackageName());
+                
+                if (code == 0) {
+                    Intent intent = new Intent(context, PackageService.class);
+                    intent.setAction(PackageService.ACTION_UPDATE);
+                    context.startService(intent);
+                }
+                
+                dialog.dismiss();
+            }
+        });
+        
+        builder.setNegativeButton(R.string.confirm_cancel, new DialogInterface.OnClickListener() {
+            
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+            }
+        });
+        builder.create().show();
+    }
+    
+    AdapterView.OnItemLongClickListener longClickEnabled = new AdapterView.OnItemLongClickListener() {
 
         @Override
         public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-            final App item = enabledApps.get(position);
-            
-            AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        	processLongClick(enabledApps, position);
+            return true;
+        }
+    };
 
-            if (item != null && item.isEnabled) {
-                builder.setTitle(R.string.confirm_disable_title);
-                builder.setMessage(R.string.confirm_disable_caution);
-            } else {
-                builder.setTitle(R.string.confirm_enable_title);
-            }
-            
-            builder.setPositiveButton(R.string.confirm_yes, new DialogInterface.OnClickListener() {
-                
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    int code = exec(item.isEnabled(), item.getPackageName());
-                    
-                    if (code == 0) {
-                        Intent intent = new Intent(context, PackageService.class);
-                        intent.setAction(PackageService.ACTION_UPDATE);
-                        context.startService(intent);
-                    }
-                    
-                    dialog.dismiss();
-                }
-            });
-            
-            builder.setNegativeButton(R.string.confirm_cancel, new DialogInterface.OnClickListener() {
-                
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    dialog.dismiss();
-                }
-            });
-            builder.create().show();
+    AdapterView.OnItemLongClickListener longClickDisabled = new AdapterView.OnItemLongClickListener() {
+
+        @Override
+        public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+        	processLongClick(disabledApps, position);
             return true;
         }
     };
@@ -188,13 +225,13 @@ public class AsyncApps extends AsyncTask<Void, String, Void> {
     protected void onPostExecute(Void result) {
         AppAdapter enabledAdapter = new AppAdapter(context, R.layout.app_row, enabledApps);
         enabledList.setAdapter(enabledAdapter);
-        enabledList.setOnItemClickListener(click);
-        enabledList.setOnItemLongClickListener(longClick);
+        enabledList.setOnItemClickListener(clickEnabled);
+        enabledList.setOnItemLongClickListener(longClickEnabled);
 
         AppAdapter disabledAdapter = new AppAdapter(context, R.layout.app_row, disabledApps);
         disabledList.setAdapter(disabledAdapter);
-        disabledList.setOnItemClickListener(click);
-        disabledList.setOnItemLongClickListener(longClick);
+        disabledList.setOnItemClickListener(clickDisabled);
+        disabledList.setOnItemLongClickListener(longClickDisabled);
         
         try { dialog.dismiss(); } catch (Exception e) {}
     }
@@ -257,4 +294,86 @@ public class AsyncApps extends AsyncTask<Void, String, Void> {
         Log.d(TAG, "exec: result="+result.toString()+", exitValue="+exitValue);
         return exitValue;
     }
+	static void parseManifest(Context context, String packageName) {
+		List<String> requestedPermissions = new ArrayList<String>();
+		List<String> receivers = new ArrayList<String>();
+		PackageManager pm = context.getPackageManager();
+		ApplicationInfo info = null;
+		try {
+			info = pm.getApplicationInfo(
+					packageName, PackageManager.GET_META_DATA);
+		} catch (NameNotFoundException e1) {
+			e1.printStackTrace();
+		}
+    	if (info != null) {
+    		try {
+    			// TODO Log.d(TAG, "parseManifest: publicSourceDir="+info.publicSourceDir);
+    			Class clazz = Class.forName("android.content.res.AssetManager");
+    			Object am = clazz.newInstance();
+    			Method addAssetPath =
+    				am.getClass().getMethod(
+    						"addAssetPath",
+    						new Class[]{ String.class });
+    			Object c = addAssetPath.invoke(am, info.publicSourceDir);
+    			// TODO Log.d(TAG, "parseManifest: c="+c);
+    			if (c != null) {
+    				int cookie = Integer.parseInt(c.toString());
+    				Method openXmlResourceParser =
+    					am.getClass().getMethod(
+    							"openXmlResourceParser",
+    							new Class[]{ int.class, String.class });
+    				Object p =
+    					openXmlResourceParser.invoke(am, cookie, "AndroidManifest.xml");
+    				// TODO Log.d(TAG, "parseManifest: p="+p);
+    				if (p instanceof XmlResourceParser) {
+    					XmlResourceParser parser = (XmlResourceParser)p;
+    					int type;
+    					boolean inUsesPermission = false;
+    					boolean inReceiver = false;
+    					boolean inIntentFilter = false;
+    					boolean inAction = false;
+    					String tagName = null;
+    					while ((type = parser.next()) != XmlResourceParser.END_DOCUMENT) {
+    						// TODO Log.d(TAG, "1:parseManifest: type="+type+", name="+parser.getName());
+    						switch (type) {
+    						case XmlResourceParser.START_TAG:
+    							tagName = parser.getName();
+    							if (tagName != null) {
+    								if (tagName.equals(USES_PERMISSION)) inUsesPermission = true;
+    								if (tagName.equals(RECEIVER))        inReceiver     = true;
+    								if (tagName.equals(INTENT_FILTER))   inIntentFilter = true;
+    								if (tagName.equals(ACTION))          inAction       = true;
+    							}
+    							break;
+    						case XmlResourceParser.END_TAG:
+    							tagName = parser.getName();
+    							if (tagName != null) {
+    								if (tagName.equals(USES_PERMISSION)) inUsesPermission = false;
+    								if (tagName.equals(RECEIVER))      inReceiver         = false;
+    								if (tagName.equals(INTENT_FILTER)) inIntentFilter     = false;
+    								if (tagName.equals(ACTION))        inAction           = false;
+    							}
+    							break;
+    						}
+    						// TODO Log.d(TAG, "inReceiver="+inReceiver+", inIntentFilter="+inIntentFilter+", inAction="+inAction);
+    						if (inUsesPermission) {
+    							String value = parser.getAttributeValue(NAMESPACE, NAME);
+    							Log.d(TAG, "parseManifest: packageName="+packageName+", uses-permission="+value);
+    							requestedPermissions.add(value);
+    						}
+    						if (inReceiver && inIntentFilter && inAction) {
+    							String value = parser.getAttributeValue(NAMESPACE, NAME);
+    							Log.d(TAG, "parseManifest: packageName="+packageName+", receiver="+value);
+    							if (value != null) {
+    								receivers.add(value);
+    							}
+    						}
+    					}
+    				}
+    			}
+    		} catch (Exception e) {
+    			e.printStackTrace();
+    		}
+    	}
+	}
 }
